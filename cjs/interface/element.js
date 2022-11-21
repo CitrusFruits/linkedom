@@ -25,36 +25,36 @@ const {
   localCase
 } = require('../shared/utils.js');
 
-const {elementAsJSON} = require('../shared/jsdon.js');
-const {matches, prepareMatch} = require('../shared/matches.js');
-const {shadowRoots} = require('../shared/shadow-roots.js');
+const { elementAsJSON } = require('../shared/jsdon.js');
+const { matches, prepareMatch } = require('../shared/matches.js');
+const { shadowRoots } = require('../shared/shadow-roots.js');
 
-const {isConnected, parentElement, previousSibling, nextSibling} = require('../shared/node.js');
-const {previousElementSibling, nextElementSibling} = require('../mixin/non-document-type-child-node.js');
+const { isConnected, parentElement, previousSibling, nextSibling } = require('../shared/node.js');
+const { previousElementSibling, nextElementSibling } = require('../mixin/non-document-type-child-node.js');
 
-const {before, after, replaceWith, remove} = require('../mixin/child-node.js');
-const {getInnerHtml, setInnerHtml} = require('../mixin/inner-html.js');
-const {ParentNode} = require('../mixin/parent-node.js');
+const { before, after, replaceWith, remove } = require('../mixin/child-node.js');
+const { getInnerHtml, setInnerHtml } = require('../mixin/inner-html.js');
+const { ParentNode } = require('../mixin/parent-node.js');
 
-const {DOMStringMap} = require('../dom/string-map.js');
-const {DOMTokenList} = require('../dom/token-list.js');
+const { DOMStringMap } = require('../dom/string-map.js');
+const { DOMTokenList } = require('../dom/token-list.js');
 
-const {CSSStyleDeclaration} = require('./css-style-declaration.js');
-const {Event} = require('./event.js');
-const {NamedNodeMap} = require('./named-node-map.js');
-const {ShadowRoot} = require('./shadow-root.js');
-const {NodeList} = require('./node-list.js');
-const {Attr} = require('./attr.js');
-const {Text} = require('./text.js');
+const { CSSStyleDeclaration } = require('./css-style-declaration.js');
+const { Event } = require('./event.js');
+const { NamedNodeMap } = require('./named-node-map.js');
+const { ShadowRoot } = require('./shadow-root.js');
+const { NodeList } = require('./node-list.js');
+const { Attr } = require('./attr.js');
+const { Text } = require('./text.js');
 
 // <utils>
 const attributesHandler = {
   get(target, key) {
-    return key in target ? target[key] : target.find(({name}) => name === key);
+    return key in target ? target[key] : target.find(({ name }) => name === key);
   }
 };
 
-const create = (ownerDocument, element, localName)  => {
+const create = (ownerDocument, element, localName) => {
   if ('ownerSVGElement' in element) {
     const svg = ownerDocument.createElementNS(SVG_NAMESPACE, localName);
     svg.ownerSVGElement = element.ownerSVGElement;
@@ -63,7 +63,7 @@ const create = (ownerDocument, element, localName)  => {
   return ownerDocument.createElement(localName);
 };
 
-const isVoid = ({localName, ownerDocument}) => {
+const isVoid = ({ localName, ownerDocument }) => {
   return ownerDocument[MIME].voidElements.test(localName);
 };
 
@@ -101,7 +101,7 @@ class Element extends ParentNode {
 
   get className() { return this.classList.value; }
   set className(value) {
-    const {classList} = this;
+    const { classList } = this;
     classList.clear();
     classList.add(...value.split(/\s+/));
   }
@@ -138,11 +138,11 @@ class Element extends ParentNode {
   // <contentRelated>
   get innerText() {
     const text = [];
-    let {[NEXT]: next, [END]: end} = this;
+    let { [NEXT]: next, [END]: end } = this;
     while (next !== end) {
       if (next.nodeType === TEXT_NODE) {
-        text.push(next.textContent.replace(/\s+/g, ' '));
-      } else if(
+        text.push(next.textContent.replace(/[\r\t\f\v \u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+/g, (match) => match[0]));
+      } else if (
         text.length && next[NEXT] != end &&
         BLOCK_ELEMENTS.has(next.tagName)
       ) {
@@ -158,7 +158,7 @@ class Element extends ParentNode {
    */
   get textContent() {
     const text = [];
-    let {[NEXT]: next, [END]: end} = this;
+    let { [NEXT]: next, [END]: end } = this;
     while (next !== end) {
       if (next.nodeType === TEXT_NODE)
         text.push(next.textContent);
@@ -233,7 +233,7 @@ class Element extends ParentNode {
 
   removeAttribute(name) {
     if (name === 'class' && this[CLASS_LIST])
-        this[CLASS_LIST].clear();
+      this[CLASS_LIST].clear();
     let next = this[NEXT];
     while (next.nodeType === ATTRIBUTE_NODE) {
       if (next.name === name) {
@@ -268,12 +268,12 @@ class Element extends ParentNode {
   }
 
   setAttributeNode(attribute) {
-    const {name} = attribute;
+    const { name } = attribute;
     const previously = this.getAttributeNode(name);
     if (previously !== attribute) {
       if (previously)
         this.removeAttributeNode(previously);
-      const {ownerElement} = attribute;
+      const { ownerElement } = attribute;
       if (ownerElement)
         ownerElement.removeAttributeNode(attribute);
       setAttribute(this, attribute);
@@ -300,7 +300,7 @@ class Element extends ParentNode {
   // <ShadowDOM>
   get shadowRoot() {
     if (shadowRoots.has(this)) {
-      const {mode, shadowRoot} = shadowRoots.get(this);
+      const { mode, shadowRoot } = shadowRoots.get(this);
       if (mode === 'open')
         return shadowRoot;
     }
@@ -335,7 +335,7 @@ class Element extends ParentNode {
 
   // <insertAdjacent>
   insertAdjacentElement(position, element) {
-    const {parentElement} = this;
+    const { parentElement } = this;
     switch (position) {
       case 'beforebegin':
         if (parentElement) {
@@ -372,7 +372,7 @@ class Element extends ParentNode {
   // </insertAdjacent>
 
   cloneNode(deep = false) {
-    const {ownerDocument, localName} = this;
+    const { ownerDocument, localName } = this;
     const addNext = next => {
       next.parentNode = parentNode;
       knownAdjacent($next, next);
@@ -380,7 +380,7 @@ class Element extends ParentNode {
     };
     const clone = create(ownerDocument, this, localName);
     let parentNode = clone, $next = clone;
-    let {[NEXT]: next, [END]: prev} = this;
+    let { [NEXT]: next, [END]: prev } = this;
     while (next !== prev && (deep || next.nodeType === ATTRIBUTE_NODE)) {
       switch (next.nodeType) {
         case NODE_END:
@@ -414,8 +414,8 @@ class Element extends ParentNode {
   // <custom>
   toString() {
     const out = [];
-    const {[END]: end} = this;
-    let next = {[NEXT]: this};
+    const { [END]: end } = this;
+    let next = { [NEXT]: this };
     let isOpened = false;
     do {
       next = next[NEXT];
